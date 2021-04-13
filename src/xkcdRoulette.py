@@ -5,8 +5,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import random
 from kumikolib import Kumiko
+import tweepy
+import json
 
 desiredheight = 350
+local = True
+debug = False
+printonly = False
 
 #adds a border to an image with the passed width, returns new image
 def pad(image, width):
@@ -26,8 +31,9 @@ def panelcheck(panellist):
 
 #generates random xkcd image
 def makerandomxkcd():
-    panellist = np.zeros((350,1))
-    while(panellist.shape[1] < 700):
+    comicbuilder = np.zeros((350,1))
+    comiclist = []
+    while(comicbuilder.shape[1] < 700):
         try:
             #get random comic, pad it because some panels don't have borders
             comic = xkcd.getRandomComic()
@@ -42,26 +48,48 @@ def makerandomxkcd():
                 continue
             if len(array.shape) > 2:
                 array = cv2.cvtColor(array, cv2.COLOR_BGR2GRAY)
-
-            print(f'Found comic: {comic.getImageLink()} with shape {array.shape}')
+            if(debug):
+                print(f'Found comic: {comic.getImageLink()} with shape {array.shape}')
             x, y , w, h = goodpanels[random.randint(0,len(goodpanels)-1)]
             #extract panel (removing top/bottom padding), scale, and hstack
             chosenpanel = array[y+1:y+h-1, x: x+w]
             scalefactor = desiredheight / h
             chosenpanel = cv2.resize(chosenpanel, (int(w*scalefactor), desiredheight))
-            panellist = np.hstack([panellist, chosenpanel])
+            comicbuilder = np.hstack([comicbuilder, chosenpanel])
+            comiclist.append(comic.__getattribute__("number"))
         except:
             #Just look for new comics if some are problematic
             continue
-    plt.imshow(panellist, cmap='Greys_r')
-    plt.show()
-    cv2.imwrite("xkcd.png", panellist)
-    return True
-for i in range(10):
-    print(f"Comic # {i}")
-    makerandomxkcd()
-# array = imageio.imread("https://imgs.xkcd.com/comics/e_to_the_pi_minus_pi.png")
-# array = pad(array,1)
-# plt.imshow(array ,cmap='Greys_r')
-# cv2.imwrite("xkcd2.png", array)
-# plt.show()
+    if(debug):
+        plt.imshow(comicbuilder, cmap='Greys_r')
+        plt.show()
+    cv2.imwrite("xkcd.png", comicbuilder)
+    return comiclist if len(comiclist)>0 else None
+
+def execute():
+    if(local):
+        with open('config.json') as config_file:
+            config = json.load(config_file)
+        # Tweepy authentication
+    else:
+        config = {}
+    auth = tweepy.OAuthHandler(config['keys']['api_key'], config['keys']['api_key_secret'])
+    auth.set_access_token(config['keys']['consumer_key'], config['keys']['consumer_key_secret'])
+    api = tweepy.API(auth)
+    try:
+        api.verify_credentials()
+        print("Authentication OK")
+    except:
+        print("Error during authentication")
+    message = makerandomxkcd()
+    if(message):
+        imagepath = 'xkcd.png'
+        message = [str(m) for m in message]
+        statusout = "xkcd comics "+ ','.join(message)
+        if(printonly):
+            print(statusout)
+        else:
+            api.update_with_media(imagepath, status=message)
+            print("posted")
+
+execute()
