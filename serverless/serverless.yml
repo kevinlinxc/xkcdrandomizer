@@ -1,0 +1,33 @@
+
+frameworkVersion: '2.35.0'
+service: xkcdrandomizer
+
+provider:
+  name: aws
+  runtime: python3.8
+
+
+functions:
+  xkcdrandomizer:
+    handler: xkcdrandomizer.handler
+    events:
+      - schedule:
+          rate: cron(0 20 * * ? *)
+
+plugins:
+  - serverless-python-requirements
+custom:
+  pythonRequirements:
+    dockerizePip: true
+    #useDownloadCache: true
+    #useStaticCache: false
+    #slim: true
+    #strip: false
+#    layer:
+#      name: ${self:provider.stage}-cv2
+#      description: Python requirements lambda layer
+#      compatibleRuntimes:
+#        - python3.8
+#      licenseInfo: GPLv3
+#      allowedAccounts:
+#        - '*'

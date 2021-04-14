@@ -8,10 +8,10 @@ from kumikolib import Kumiko
 import tweepy
 import json
 
-desiredheight = 350
+desiredheight = 1000
 local = True
-debug = False
-printonly = False
+debug = True
+printonly = True
 
 #adds a border to an image with the passed width, returns new image
 def pad(image, width):
@@ -31,9 +31,9 @@ def panelcheck(panellist):
 
 #generates random xkcd image
 def makerandomxkcd():
-    comicbuilder = np.zeros((350,1))
+    comicbuilder = np.zeros((desiredheight,1))
     comiclist = []
-    while(comicbuilder.shape[1] < 700):
+    while(comicbuilder.shape[1] < desiredheight*2):
         try:
             #get random comic, pad it because some panels don't have borders
             comic = xkcd.getRandomComic()
@@ -85,11 +85,10 @@ def execute():
     if(message):
         imagepath = 'xkcd.png'
         message = [str(m) for m in message]
-        statusout = "xkcd comics "+ ','.join(message)
+        statusout = "#xkcd comics "+ ','.join(message)
         if(printonly):
             print(statusout)
         else:
-            api.update_with_media(imagepath, status=message)
+            api.update_with_media(imagepath, status=statusout)
             print("posted")
-
 execute()
