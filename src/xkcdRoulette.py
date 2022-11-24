@@ -42,15 +42,15 @@ def makerandomxkcd():
             array = imageio.imread(comic.getImageLink())
             array = pad(array,1)
             # get panel corners using kumiko
-            k= Kumiko()
+            k = Kumiko()
             info = k.parse_images([array])
             panels = info[0]['panels']
             goodpanels = panelcheck(panels)
-            if (len(goodpanels) == 0):
+            if len(goodpanels) == 0:
                 continue
             if len(array.shape) > 2:
                 array = cv2.cvtColor(array, cv2.COLOR_BGR2GRAY)
-            if(debug):
+            if debug:
                 print(f'Found comic: {comic.getImageLink()} with shape {array.shape}')
             # pikc a random frame out of this comic
             x, y , w, h = goodpanels[random.randint(0,len(goodpanels)-1)]
