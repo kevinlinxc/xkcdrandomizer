@@ -1,3 +1,4 @@
+# local version. Actual file publishing to Twitter is serverless/xkcdrandomizer.py
 import xkcd
 import cv2
 import imageio
@@ -9,16 +10,17 @@ import tweepy
 import json
 
 desiredheight = 1000
+# flags for local testing
 local = True
 debug = True
 printonly = True
 
-#adds a border to an image with the passed width, returns new image
+# adds border padding to an image with the passed width, returns new image
 def pad(image, width):
     black = [0,0,0]
     return cv2.copyMakeBorder(image.copy(),width,width,width,width,cv2.BORDER_CONSTANT,value=black)
 
-#Rejects panels that are too tall or wide, too small or large
+# rejects panels that are too tall or wide, too small or large
 def panelcheck(panellist):
     returnlist = []
     for panel in panellist:
@@ -29,17 +31,17 @@ def panelcheck(panellist):
             returnlist.append(panel)
     return returnlist
 
-#generates random xkcd image
+# generates random xkcd image
 def makerandomxkcd():
     comicbuilder = np.zeros((desiredheight,1))
     comiclist = []
-    while(comicbuilder.shape[1] < desiredheight*2):
+    while comicbuilder.shape[1] < desiredheight*2:
         try:
-            #get random comic, pad it because some panels don't have borders
+            # get random comic, pad it because some panels don't have borders
             comic = xkcd.getRandomComic()
             array = imageio.imread(comic.getImageLink())
             array = pad(array,1)
-            #get panel corners using kumiko
+            # get panel corners using kumiko
             k= Kumiko()
             info = k.parse_images([array])
             panels = info[0]['panels']
@@ -50,24 +52,25 @@ def makerandomxkcd():
                 array = cv2.cvtColor(array, cv2.COLOR_BGR2GRAY)
             if(debug):
                 print(f'Found comic: {comic.getImageLink()} with shape {array.shape}')
+            # pikc a random frame out of this comic
             x, y , w, h = goodpanels[random.randint(0,len(goodpanels)-1)]
-            #extract panel (removing top/bottom padding), scale, and hstack
+            # extract panel (removing top/bottom padding), scale, and hstack
             chosenpanel = array[y+1:y+h-1, x: x+w]
             scalefactor = desiredheight / h
             chosenpanel = cv2.resize(chosenpanel, (int(w*scalefactor), desiredheight))
             comicbuilder = np.hstack([comicbuilder, chosenpanel])
             comiclist.append(comic.__getattribute__("number"))
         except:
-            #Just look for new comics if some are problematic
+            # just look for new comics if some are problematic
             continue
-    if(debug):
+    if debug:
         plt.imshow(comicbuilder, cmap='Greys_r')
         plt.show()
     cv2.imwrite("xkcd.png", comicbuilder)
     return comiclist if len(comiclist)>0 else None
 
 def execute():
-    if(local):
+    if local:
         with open('config.json') as config_file:
             config = json.load(config_file)
         # Tweepy authentication
@@ -82,11 +85,11 @@ def execute():
     except:
         print("Error during authentication")
     message = makerandomxkcd()
-    if(message):
+    if message:
         imagepath = 'xkcd.png'
         message = [str(m) for m in message]
         statusout = "#xkcd comics "+ ','.join(message)
-        if(printonly):
+        if printonly:
             print(statusout)
         else:
             api.update_with_media(imagepath, status=statusout)
